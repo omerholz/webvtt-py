@@ -23,12 +23,12 @@ from . import WebVTTSegmenter, __version__
 def main():
     """Main entry point for CLI commands."""
     options = docopt(__doc__, version=__version__)
-    if options['segment']:
+    if options["segment"]:
         segment(
-            options['<file>'],
-            options['--output'],
-            options['--target-duration'],
-            options['--mpegts'],
+            options["<file>"],
+            options["--output"],
+            options["--target-duration"],
+            options["--mpegts"],
         )
 
 
@@ -37,11 +37,11 @@ def segment(f, output, target_duration, mpegts):
     try:
         target_duration = int(target_duration)
     except ValueError:
-        exit('Error: Invalid target duration.')
+        exit("Error: Invalid target duration.")
 
     try:
         mpegts = int(mpegts)
     except ValueError:
-        exit('Error: Invalid MPEGTS value.')
+        exit("Error: Invalid MPEGTS value.")
 
     WebVTTSegmenter().segment(f, output, target_duration, mpegts)
