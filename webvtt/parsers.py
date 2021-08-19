@@ -1,9 +1,9 @@
-import re
-import os
 import codecs
+import os
+import re
 
-from .errors import MalformedFileError, MalformedCaptionError
-from .structures import Block, Style, Caption
+from .errors import MalformedCaptionError, MalformedFileError
+from .structures import Block, Caption, Style
 
 
 class TextBasedParser(object):
@@ -12,7 +12,7 @@ class TextBasedParser(object):
     This is a generic class, do not use directly.
     """
 
-    TIMEFRAME_LINE_PATTERN = ''
+    TIMEFRAME_LINE_PATTERN = ""
     PARSER_OPTIONS = {}
 
     def __init__(self, parse_options=None):
@@ -41,20 +41,20 @@ class TextBasedParser(object):
 
     def _read_file_encoding(self, file_path):
         first_bytes = min(32, os.path.getsize(file_path))
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             raw = f.read(first_bytes)
 
         if raw.startswith(codecs.BOM_UTF8):
-            return 'utf-8-sig'
+            return "utf-8-sig"
         else:
-            return 'utf-8'
+            return "utf-8"
 
     def _read_content_lines(self, file_obj):
 
-        lines = [line.rstrip('\n\r') for line in file_obj.readlines()]
+        lines = [line.rstrip("\n\r") for line in file_obj.readlines()]
 
         if not lines:
-            raise MalformedFileError('The file is empty.')
+            raise MalformedFileError("The file is empty.")
 
         return lines
 
@@ -65,7 +65,7 @@ class TextBasedParser(object):
         """Parse timeframe line and return start and end timestamps."""
         tf = self._validate_timeframe_line(line)
         if not tf:
-            raise MalformedCaptionError('Invalid time format')
+            raise MalformedCaptionError("Invalid time format")
 
         return tf.group(1), tf.group(2)
 
@@ -102,24 +102,29 @@ class TextBasedParser(object):
                 try:
                     start, end = self._parse_timeframe_line(line)
                 except MalformedCaptionError as e:
-                    raise MalformedCaptionError('{} in line {}'.format(e, index + 1))
+                    raise MalformedCaptionError("{} in line {}".format(
+                        e, index + 1))
                 c = Caption(start, end)
-            elif self._should_skip_line(line, index, c):  # allow child classes to skip lines based on the content
+            elif self._should_skip_line(
+                    line, index, c
+            ):  # allow child classes to skip lines based on the content
                 continue
             elif line:
                 if c is None:
                     raise MalformedCaptionError(
-                        'Caption missing timeframe in line {}.'.format(index + 1))
+                        "Caption missing timeframe in line {}.".format(index +
+                                                                       1))
                 else:
                     c.add_line(line)
             else:
                 if c is None:
                     continue
                 if not c.lines:
-                    if self.PARSER_OPTIONS.get('ignore_empty_captions', False):
+                    if self.PARSER_OPTIONS.get("ignore_empty_captions", False):
                         c = None
                         continue
-                    raise MalformedCaptionError('Caption missing text in line {}.'.format(index + 1))
+                    raise MalformedCaptionError(
+                        "Caption missing text in line {}.".format(index + 1))
 
                 self.captions.append(c)
                 c = None
@@ -133,18 +138,18 @@ class SRTParser(TextBasedParser):
     SRT parser.
     """
 
-    TIMEFRAME_LINE_PATTERN = re.compile(r'\s*(\d+:\d{2}:\d{2},\d{3})\s*-->\s*(\d+:\d{2}:\d{2},\d{3})')
+    TIMEFRAME_LINE_PATTERN = re.compile(
+        r"\s*(\d+:\d{2}:\d{2},\d{3})\s*-->\s*(\d+:\d{2}:\d{2},\d{3})")
 
-    PARSER_OPTIONS = {
-        'ignore_empty_captions': True
-    }
+    PARSER_OPTIONS = {"ignore_empty_captions": True}
 
     def _validate(self, lines):
-        if len(lines) < 2 or lines[0] != '1' or not self._validate_timeframe_line(lines[1]):
-            raise MalformedFileError('The file does not have a valid format.')
+        if (len(lines) < 2 or lines[0] != "1"
+                or not self._validate_timeframe_line(lines[1])):
+            raise MalformedFileError("The file does not have a valid format.")
 
     def _is_timeframe_line(self, line):
-        return '-->' in line
+        return "-->" in line
 
     def _should_skip_line(self, line, index, caption):
         return caption is None and line.isdigit()
@@ -155,9 +160,11 @@ class WebVTTParser(TextBasedParser):
     WebVTT parser.
     """
 
-    TIMEFRAME_LINE_PATTERN = re.compile(r'\s*((?:\d+:)?\d{2}:\d{2}.\d{3})\s*-->\s*((?:\d+:)?\d{2}:\d{2}.\d{3})')
-    COMMENT_PATTERN = re.compile(r'NOTE(?:\s.+|$)')
-    STYLE_PATTERN = re.compile(r'STYLE[ \t]*$')
+    TIMEFRAME_LINE_PATTERN = re.compile(
+        r"\s*((?:\d+:)?\d{2}:\d{2}.\d{3})\s*-->\s*((?:\d+:)?\d{2}:\d{2}.\d{3})"
+    )
+    COMMENT_PATTERN = re.compile(r"NOTE(?:\s.+|$)")
+    STYLE_PATTERN = re.compile(r"STYLE[ \t]*$")
 
     def __init__(self):
         super().__init__()
@@ -192,12 +199,11 @@ class WebVTTParser(TextBasedParser):
                     try:
                         cue_timings = self._parse_timeframe_line(line)
                     except MalformedCaptionError as e:
-                        raise MalformedCaptionError(
-                            '{} in line {}'.format(e, block.line_number + line_number))
+                        raise MalformedCaptionError("{} in line {}".format(
+                            e, block.line_number + line_number))
                 else:
                     additional_blocks = self._compute_blocks(
-                        ['WEBVTT', ''] + block.lines[line_number:]
-                    )
+                        ["WEBVTT", ""] + block.lines[line_number:])
                     break
             elif line_number == 0:
                 caption.identifier = line
@@ -240,25 +246,27 @@ class WebVTTParser(TextBasedParser):
             elif self._is_style_block(block):
                 if self.captions:
                     raise MalformedFileError(
-                        'Style block defined after the first cue in line {}.'
-                        .format(block.line_number))
+                        "Style block defined after the first cue in line {}.".
+                        format(block.line_number))
                 style = Style()
                 style.lines = block.lines[1:]
                 self.styles.append(style)
             else:
                 if len(block.lines) == 1:
                     raise MalformedCaptionError(
-                        'Standalone cue identifier in line {}.'.format(block.line_number))
+                        "Standalone cue identifier in line {}.".format(
+                            block.line_number))
                 else:
                     raise MalformedCaptionError(
-                        'Missing timing cue in line {}.'.format(block.line_number+1))
+                        "Missing timing cue in line {}.".format(
+                            block.line_number + 1))
 
     def _validate(self, lines):
-        if not re.match('WEBVTT', lines[0]):
-            raise MalformedFileError('The file does not have a valid format')
+        if not re.match("WEBVTT", lines[0]):
+            raise MalformedFileError("The file does not have a valid format")
 
     def _is_cue_timings_line(self, line):
-        return '-->' in line
+        return "-->" in line
 
     def _is_cue_block(self, block):
         """Returns True if it is a cue block
@@ -279,15 +287,14 @@ class SBVParser(TextBasedParser):
     YouTube SBV parser.
     """
 
-    TIMEFRAME_LINE_PATTERN = re.compile(r'\s*(\d+:\d{2}:\d{2}.\d{3}),(\d+:\d{2}:\d{2}.\d{3})')
+    TIMEFRAME_LINE_PATTERN = re.compile(
+        r"\s*(\d+:\d{2}:\d{2}.\d{3}),(\d+:\d{2}:\d{2}.\d{3})")
 
-    PARSER_OPTIONS = {
-        'ignore_empty_captions': True
-    }
+    PARSER_OPTIONS = {"ignore_empty_captions": True}
 
     def _validate(self, lines):
         if not self._validate_timeframe_line(lines[0]):
-            raise MalformedFileError('The file does not have a valid format')
+            raise MalformedFileError("The file does not have a valid format")
 
     def _is_timeframe_line(self, line):
         return self._validate_timeframe_line(line)

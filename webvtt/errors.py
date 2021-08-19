@@ -1,5 +1,9 @@
-
-__all__ = ['MalformedFileError', 'MalformedCaptionError', 'InvalidCaptionsError', 'MissingFilenameError']
+__all__ = [
+    "MalformedFileError",
+    "MalformedCaptionError",
+    "InvalidCaptionsError",
+    "MissingFilenameError",
+]
 
 
 class MalformedFileError(Exception):
