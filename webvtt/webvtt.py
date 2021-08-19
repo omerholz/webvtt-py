@@ -1,10 +1,10 @@
 import os
 
-from .parsers import WebVTTParser, SRTParser, SBVParser
-from .writers import WebVTTWriter, SRTWriter
 from .errors import MissingFilenameError
+from .parsers import SBVParser, SRTParser, WebVTTParser
+from .writers import SRTWriter, WebVTTWriter
 
-__all__ = ['WebVTT']
+__all__ = ["WebVTT"]
 
 
 class WebVTT(object):
@@ -22,7 +22,7 @@ class WebVTT(object):
     A list of all supported formats is available calling list_formats().
     """
 
-    def __init__(self, file='', captions=None, styles=None):
+    def __init__(self, file="", captions=None, styles=None):
         self.file = file
         self._captions = captions or []
         self._styles = styles
@@ -34,13 +34,13 @@ class WebVTT(object):
         return self._captions[index]
 
     def __repr__(self):
-        return '<%(cls)s file=%(file)s>' % {
-            'cls': self.__class__.__name__,
-            'file': self.file
+        return "<%(cls)s file=%(file)s>" % {
+            "cls": self.__class__.__name__,
+            "file": self.file,
         }
 
     def __str__(self):
-        return '\n'.join([str(c) for c in self._captions])
+        return "\n".join([str(c) for c in self._captions])
 
     @classmethod
     def from_srt(cls, file):
@@ -68,53 +68,55 @@ class WebVTT(object):
         parser = WebVTTParser().read_from_buffer(buffer)
         return cls(captions=parser.captions, styles=parser.styles)
 
-    def _get_output_file(self, output, extension='vtt'):
+    def _get_output_file(self, output, extension="vtt"):
         if not output:
             if not self.file:
                 raise MissingFilenameError
             # saving an original vtt file will overwrite the file
             # and for files read from other formats will save as vtt
             # with the same name and location
-            return os.path.splitext(self.file)[0] + '.' + extension
+            return os.path.splitext(self.file)[0] + "." + extension
         else:
             target = os.path.join(os.getcwd(), output)
             if os.path.isdir(target):
                 # if an output is provided and it is a directory
                 # the file will be saved in that location with the same name
                 filename = os.path.splitext(os.path.basename(self.file))[0]
-                return os.path.join(target, '{}.{}'.format(filename, extension))
+                return os.path.join(target,
+                                    "{}.{}".format(filename, extension))
             else:
                 if target[-3:].lower() != extension:
-                    target += '.' + extension
+                    target += "." + extension
                 # otherwise the file will be written in the specified location
                 return target
 
-    def save(self, output=''):
+    def save(self, output=""):
         """Save the document.
         If no output is provided the file will be saved in the same location. Otherwise output
         can determine a target directory or file.
         """
         self.file = self._get_output_file(output)
-        with open(self.file, 'w', encoding='utf-8') as f:
+        with open(self.file, "w", encoding="utf-8") as f:
             self.write(f)
 
-    def save_as_srt(self, output=''):
-        self.file = self._get_output_file(output, extension='srt')
-        with open(self.file, 'w', encoding='utf-8') as f:
-            self.write(f, format='srt')
+    def save_as_srt(self, output=""):
+        self.file = self._get_output_file(output, extension="srt")
+        with open(self.file, "w", encoding="utf-8") as f:
+            self.write(f, format="srt")
 
-    def write(self, f, format='vtt'):
-        if format == 'vtt':
+    def write(self, f, format="vtt"):
+        if format == "vtt":
             WebVTTWriter().write(self._captions, f)
-        elif format == 'srt':
+        elif format == "srt":
             SRTWriter().write(self._captions, f)
-#        elif output_format == OutputFormat.SBV:
-#            SBVWriter().write(self._captions, f)
+
+    #        elif output_format == OutputFormat.SBV:
+    #            SBVWriter().write(self._captions, f)
 
     @staticmethod
     def list_formats():
         """Provides a list of supported formats that this class can read from."""
-        return ('WebVTT (.vtt)', 'SubRip (.srt)', 'YouTube SBV (.sbv)')
+        return ("WebVTT (.vtt)", "SubRip (.srt)", "YouTube SBV (.sbv)")
 
     @property
     def captions(self):
@@ -126,7 +128,8 @@ class WebVTT(object):
         """Returns the total length of the captions."""
         if not self._captions:
             return 0
-        return int(self._captions[-1].end_in_seconds) - int(self._captions[0].start_in_seconds)
+        return int(self._captions[-1].end_in_seconds) - int(
+            self._captions[0].start_in_seconds)
 
     @property
     def styles(self):
